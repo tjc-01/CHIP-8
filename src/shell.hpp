@@ -322,11 +322,12 @@ std::string fetch(){
             case '0':
             if(instruction.substr(1) == "0e0"){
 
-            clear_screen();break;}
+            clear_screen();}
             else{
                 std::cout<<"instruction not implemented yet"<<std::endl;
-                break;
+                
             }
+            break;
             case '1':
 
             jump(instruction.substr(1));break;
