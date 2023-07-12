@@ -104,6 +104,7 @@ uint8_t font[] = {
     0b10000000,
     0b10000000,
 };
+//takes an 8 bit integer and outputs an array corresponding to its binary string
 std::array<bool, 8> extractBits(uint8_t value) {
     std::array<bool, 8> output;
     for (int i = 7; i >= 0; --i) {
@@ -114,16 +115,22 @@ std::array<bool, 8> extractBits(uint8_t value) {
 };
 class shell{
     public:
-    
+//The 16 8-bit registers are stored in an array.
     std::array<uint8_t, 16> vRegisters = {0};
+//The I register (misspelled)
     int iRegsiter = 0;
+//ram should be 4096 bytes but why not use 10000 bytes?
     std::array<uint8_t, 10000> ram;
-    
+ // not used for implementation yet   
     unsigned char delay = 0;
     unsigned char sound = 0;
+//array controlling the 64 by 32 display, with 1 corresponding to a pixel being on and 0 being off.
     std::array<std::array<bool, 32>, 64> screen = {0};
+// stack currently not implemented    
     std::stack<int> stack;
+//program counter initially pointing to 0x200, where the program  start is loaded in to CHIP-8 memory.
     uint8_t * pc = ram.data()+0x200;
+
     uint8_t * mem_ptr = ram.data();
  
  /******constructor
@@ -142,18 +149,19 @@ class shell{
 
 
 ****************/
-
+//load font into the CHIP-8 memory, starting at addr 0x50
     void load_font() {
     for (int i = 0; i < 80; i++) {
         ram[i] = font[i+0x50];
     };
     }
+// sets screen to be completely dark
     void load_screen(){
         for (auto& row : screen) {
         row.fill(false);
     }
     };
-
+//puts rom instructions into memory starting at 0x200
     void load_rom(std::string fname){
     std::ifstream file(fname, std::ios::binary);
     
@@ -183,6 +191,7 @@ class shell{
 
 *******/
 
+//fetches instruction to be executed from memory  as a string and increments by 2 to be ready for next instruction.
 std::string fetch(){
     uint8_t first_half = *pc;
 
@@ -209,6 +218,7 @@ std::string fetch(){
 /***********functions for executing instructions
 
 ************/
+//sets program counter to address
     void jump(std::string address){
         //definitely works
         std::stringstream ss;
@@ -218,7 +228,7 @@ std::string fetch(){
 
         pc = mem_ptr + x;
     };
-    
+//sets VX register to NN    
     void set(std::string registr, std::string value){
         //definitely works
         std::stringstream ss; ss<<std::hex<< registr;
@@ -233,7 +243,7 @@ std::string fetch(){
         vRegisters[v] = static_cast<uint8_t>(intValue);
 
     };
-
+//add value to  whatever value is stored in VX
     void add(std::string registr, std::string value){
         //definitely works
         std::stringstream ss; ss<<std::hex<< registr;
@@ -245,7 +255,7 @@ std::string fetch(){
         vRegisters[v] += static_cast<uint8_t>(intValue);
    
     };
-
+//sets the i Reigister to the value.
     void set_index(std::string value){
         //definitely works
 
@@ -258,7 +268,7 @@ std::string fetch(){
 
 
     };
-    
+//drawing instruction   
     void draw(std::string x, std::string y, std::string n){        
         uint8_t x_coord; uint8_t y_coord;
         int x_int = std::stoi(x, nullptr, 16);
