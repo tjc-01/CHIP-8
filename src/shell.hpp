@@ -3,7 +3,7 @@
 #include <string>
 #include <sstream>
 #include <bitset>
-
+#include <array>
 uint8_t font[] = {
 //0
     0b01100000,
@@ -113,6 +113,36 @@ std::array<bool, 8> extractBits(uint8_t value) {
     return output;
 
 };
+/*
+extracts integers from commands, from a command as an array, given the number of integers to extract.
+e.g "dxyn" as the first argument and arg_nums = 3 returns x y and n as an integer array.
+e.g. "4xnn" would return and arg_nums = 2 would return x and nn as two integers in an array.
+*/
+std::array<int, 3> extract_integers(std::string instruction, int arg_nums){
+    std::array<int,3> integers;
+    switch (arg_nums){
+    case 3:
+        for (int i=1; i<4; i++){
+        std::string x =  instruction.substr(i,1);
+        int x_int = std::stoi(x, nullptr, 16);
+        integers[i-1] = x_int;
+        };
+        break;
+    case 2:
+    for (int i=1; i<4; i++){    
+    std::string x = instruction.substr(i,i);
+    int x_int = std::stoi(x, nullptr, 16);
+    integers[i-1] = x_int;
+    };
+    break;
+    case 1:
+    std::string x = instruction.substr(1,3);
+    int x_int = std::stoi(x, nullptr, 16);
+    integers[0] = x_int;
+    break; 
+};
+return integers;
+}
 class shell{
     public:
 //The 16 8-bit registers are stored in an array.
@@ -164,7 +194,6 @@ class shell{
 //puts rom instructions into memory starting at 0x200
     void load_rom(std::string fname){
     std::ifstream file(fname, std::ios::binary);
-    
     if (!file) {
         throw "file not found";
     }
@@ -219,73 +248,35 @@ std::string fetch(){
 
 ************/
 //sets program counter to address
-    void jump(std::string address){
-        //definitely works
-        std::stringstream ss;
-        ss<<std::hex<< address;
-        int x;
-        ss>>x;
-
-        pc = mem_ptr + x;
+    void jump(std::array<int,3> address){
+        pc = mem_ptr + address[0];
     };
 //sets VX register to NN    
-    void set(std::string registr, std::string value){
+    void set(std::array<int,3> bytes){
         //definitely works
-        std::stringstream ss; ss<<std::hex<< registr;
-        unsigned int v; ss >> v;//v is the vregister being changed.
-
-        std::stringstream ss_2;
-        unsigned int intValue;
-        ss_2<<std::hex<< value;
-        ss_2>>intValue;
-
-
-        vRegisters[v] = static_cast<uint8_t>(intValue);
+        vRegisters[bytes[0]] = static_cast<uint8_t>(bytes[1]);
 
     };
 //add value to  whatever value is stored in VX
-    void add(std::string registr, std::string value){
+    void add(std::array<int,3> bytes){
         //definitely works
-        std::stringstream ss; ss<<std::hex<< registr;
-        unsigned int v; ss >> v;//v = vregister being changed.
-
-        unsigned int intValue;
-        std::stringstream ss1; ss1<<std::hex<< value;
-        ss1>>intValue;
-        vRegisters[v] += static_cast<uint8_t>(intValue);
-   
+        vRegisters[bytes[0]] += static_cast<uint8_t>(bytes[1]);  
     };
 //sets the i Reigister to the value.
-    void set_index(std::string value){
+    void set_index(std::array<int,3> bytes){
         //definitely works
-
-        int intValue;
-
-        std::stringstream ss; ss<<std::hex<< value;
-        ss>>intValue;
-
-        iRegsiter = intValue;
-
+        iRegsiter = bytes[0];
 
     };
 //drawing instruction   
-    void draw(std::string x, std::string y, std::string n){        
-        uint8_t x_coord; uint8_t y_coord;
-        int x_int = std::stoi(x, nullptr, 16);
-        int y_int = std::stoi(y, nullptr, 16);
-        int n_int = std::stoi(n, nullptr, 16);
-        x_coord = vRegisters[x_int];
-
-      
-        y_coord = vRegisters[y_int];
-
+    void draw(std::array<int,3> bytes){        
+        uint8_t x_coord = vRegisters[bytes[0]];
+        uint8_t y_coord= vRegisters[bytes[1]];
         x_coord = x_coord % 64; y_coord = y_coord % 32;
-
         vRegisters[0xf]  = 0;
-           
-        for (int row = 0; row < (n_int); ++row){
+        int n = bytes[2];
+        for (int row = 0; row < (n); ++row){
             uint8_t line = ram[row+iRegsiter];
-
             std::array<bool, 8> bits;
             bits = extractBits(line);
             for (bool i : bits){
@@ -316,7 +307,7 @@ std::string fetch(){
 ************/
     void execute(std::string instruction){
         char firstNibble = instruction[0];
-
+        
 
         switch(firstNibble){
             case '0':
@@ -329,18 +320,15 @@ std::string fetch(){
             }
             break;
             case '1':
-
-            jump(instruction.substr(1));break;
+            jump(extract_integers(instruction, 1));break;
             case '6':
-            set(instruction.substr(1,1), instruction.substr(2)); break;
+            set(extract_integers(instruction, 2)); break;
             case '7':
- 
-            add(instruction.substr(1,1), instruction.substr(2)); break;
+            add(extract_integers(instruction, 2)); break;
             case 'a':
-
-            set_index(instruction.substr(1)); break;
+            set_index(extract_integers(instruction,1)); break;
             case 'd':
-            draw(instruction.substr(1,1), instruction.substr(2,1), instruction.substr(3,1)); break;
+            draw(extract_integers(instruction, 3)); break;
             default:
             std::cout<<"instruction not implemented yet"<<std::endl;
             break;
