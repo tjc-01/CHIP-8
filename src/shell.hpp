@@ -140,6 +140,7 @@ std::array<int, 3> extract_integers(std::string instruction, int arg_nums){
     int x_int = std::stoi(x, nullptr, 16);
     integers[0] = x_int;
     break; 
+
 };
 return integers;
 }
@@ -229,9 +230,8 @@ std::string fetch(){
     std::stringstream ss;
     ss << std::hex <<  std::setw(2) << 
     std::setfill('0') << static_cast<int>(first_half);
-    
     std::string first_half_str = ss.str();
-    
+
     std::stringstream ss_2;
     ss_2 <<std::hex <<  std::setw(2) <<
     std::setfill('0') << static_cast<int>(second_half);
@@ -280,17 +280,18 @@ std::string fetch(){
             std::array<bool, 8> bits;
             bits = extractBits(line);
             for (bool i : bits){
-               if ((screen[x_coord][y_coord] && i)){
-                screen[x_coord][y_coord] = 0;
+               if ((i)){
+                screen[x_coord][y_coord] = !screen[x_coord][y_coord];
                 vRegisters[0xf] = 1;
-               } 
-                else if((i && !(screen[x_coord][y_coord]))){
-                    screen[x_coord][y_coord] = 1;
+
+                if(!screen[x_coord][y_coord]){
+                    vRegisters[0xf] = 1;
                 }
+                }
+                x_coord++;
                 if (x_coord > 63){
                     break;
                 }
-                x_coord++;
 
             }
             y_coord++;
@@ -298,7 +299,6 @@ std::string fetch(){
                 break;
             }
         }
-    //std::cout<<"end of draw"<<std::endl;
     }
 
 
