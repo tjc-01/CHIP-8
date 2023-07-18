@@ -9,7 +9,6 @@
 #include <time.h>
 
 
-
 int main(){
     std::string f_name = "IBM Logo.ch8";
     shell emulator(f_name);

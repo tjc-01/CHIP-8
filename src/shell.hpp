@@ -4,107 +4,9 @@
 #include <sstream>
 #include <bitset>
 #include <array>
-uint8_t font[] = {
-//0
-    0b01100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b01100000,
-
-//1
-    0b01100000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-    0b01110000,
-
-//2
-    0b11100000,
-    0b00010000,
-    0b00110000,
-    0b01100000,
-    0b11110000,
-//3
-    0b11100000,
-    0b00010000,
-    0b01100000,
-    0b00010000,
-    0b11100000,
-
-    0b10100000,
-    0b10100000,
-    0b11100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10000000,
-    0b11110000,
-    0b00010000,
-    0b11110000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b00010000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10010000,
-    0b11110000,
-    0b00010000,
-    0b00010000,
-
-    0b01100000,
-    0b10010000,
-    0b11110000,
-    0b10010000,
-    0b10010000,
-
-    0b10000000,
-    0b10000000,
-    0b11110000,
-    0b10010000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b11110000,
-
-    0b11100000,
-    0b10010000,
-    0b10010000,
-    0b10010000,
-    0b11100000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b11110000,
-
-    0b11110000,
-    0b10000000,
-    0b11100000,
-    0b10000000,
-    0b10000000,
-};
+#include "font.h"
 //takes an 8 bit integer and outputs an array corresponding to its binary string
+//with the most significant bit stored first.
 std::array<bool, 8> extractBits(uint8_t value) {
     std::array<bool, 8> output;
     for (int i = 7; i >= 0; --i) {
@@ -150,7 +52,6 @@ class shell{
     std::array<uint8_t, 16> vRegisters = {0};
 //The I register (misspelled)
     int iRegsiter = 0;
-//ram should be 4096 bytes but why not use 10000 bytes?
     std::array<uint8_t, 10000> ram;
  // not used for implementation yet   
     unsigned char delay = 0;
@@ -172,13 +73,8 @@ class shell{
         load_screen();
         load_rom(rom);
     };
-
-
  /************constructor functions   
-
-
-
-
+  * 
 ****************/
 //load font into the CHIP-8 memory, starting at addr 0x50
     void load_font() {
@@ -186,7 +82,7 @@ class shell{
         ram[i] = font[i+0x50];
     };
     }
-// sets screen to be completely dark
+// sets screen to be completely dark on loading.
     void load_screen(){
         for (auto& row : screen) {
         row.fill(false);
@@ -217,11 +113,7 @@ class shell{
     }
     };
 
-/********fetch instruction
-
-*******/
-
-//fetches instruction to be executed from memory  as a string and increments by 2 to be ready for next instruction.
+//fetches instruction to be executed from memory  as a string and increments by 2 to be ready to read next instruction.
 std::string fetch(){
     uint8_t first_half = *pc;
 
@@ -252,8 +144,7 @@ std::string fetch(){
         pc = mem_ptr + address[0];
     };
 //sets VX register to NN    
-    void set(std::array<int,3> bytes){
-        //definitely works
+    void set(std::array<int,3> bytes){   
         vRegisters[bytes[0]] = static_cast<uint8_t>(bytes[1]);
 
     };
@@ -266,10 +157,12 @@ std::string fetch(){
     void set_index(std::array<int,3> bytes){
         //definitely works
         iRegsiter = bytes[0];
+        std::cout<<iRegsiter<<std::endl;
 
     };
 //drawing instruction   
-    void draw(std::array<int,3> bytes){        
+    void draw(std::array<int,3> bytes){
+    //bytes[0] = x, bytes[1] = y, bytes [2] = n for the chip-8 draw instruction dxyn.        
         uint8_t x_coord = vRegisters[bytes[0]];
         uint8_t y_coord= vRegisters[bytes[1]];
         x_coord = x_coord % 64; y_coord = y_coord % 32;
@@ -282,7 +175,6 @@ std::string fetch(){
             for (bool i : bits){
                if ((i)){
                 screen[x_coord][y_coord] = !screen[x_coord][y_coord];
-                vRegisters[0xf] = 1;
 
                 if(!screen[x_coord][y_coord]){
                     vRegisters[0xf] = 1;
@@ -292,7 +184,6 @@ std::string fetch(){
                 if (x_coord > 63){
                     break;
                 }
-
             }
             y_coord++;
             if (y_coord > 31){
@@ -307,16 +198,13 @@ std::string fetch(){
 ************/
     void execute(std::string instruction){
         char firstNibble = instruction[0];
-        
 
         switch(firstNibble){
             case '0':
             if(instruction.substr(1) == "0e0"){
-
             clear_screen();}
             else{
-                std::cout<<"instruction not implemented yet"<<std::endl;
-                
+                std::cout<<"instruction not implemented yet"<<std::endl;  
             }
             break;
             case '1':
@@ -326,6 +214,7 @@ std::string fetch(){
             case '7':
             add(extract_integers(instruction, 2)); break;
             case 'a':
+            std::cout<<instruction<<std::endl;
             set_index(extract_integers(instruction,1)); break;
             case 'd':
             draw(extract_integers(instruction, 3)); break;
