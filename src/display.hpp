@@ -20,8 +20,8 @@ void display(std::array<std::array<bool, 32>, 64>* screen){
         for (int i =0; i<64; i++){
         for(int j=0; j<32; j++){
             if ((*screen)[i][j] == 1){
-                sf::RectangleShape rectangle(sf::Vector2f(1.f, 1.f));
-                rectangle.setPosition(i, j);
+                sf::RectangleShape rectangle(sf::Vector2f(0.9f, 0.9f));
+                rectangle.setPosition(i-2, j-2);
                 window.draw(rectangle);
                 }
                 }

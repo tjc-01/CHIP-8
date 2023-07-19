@@ -19,6 +19,8 @@ std::array<bool, 8> extractBits(uint8_t value) {
 extracts integers from commands, from a command as an array, given the number of integers to extract.
 e.g "dxyn" as the first argument and arg_nums = 3 returns x y and n as an integer array.
 e.g. "4xnn" would return and arg_nums = 2 would return x and nn as two integers in an array.
+Note although a size 3 array is returned, not all bytes are used, so be careful to note how
+many bits should be extracted.
 */
 std::array<int, 3> extract_integers(std::string instruction, int arg_nums){
     std::array<int,3> integers;
@@ -97,11 +99,13 @@ class shell{
 
     file.seekg(0, std::ios::end);
     std::streampos fileSize = file.tellg();
+    std::cout<<fileSize<<std::endl;
     uint8_t byte;
     for(int byte_pos=0; byte_pos<fileSize; byte_pos++){
     file.seekg(byte_pos, std::ios::beg);
     file.read(reinterpret_cast<char*>(&byte), sizeof(byte));
     ram[0x200+byte_pos] = byte;
+
     };
     file.close();
     };
@@ -112,28 +116,6 @@ class shell{
         }
     }
     };
-
-//fetches instruction to be executed from memory  as a string and increments by 2 to be ready to read next instruction.
-std::string fetch(){
-    uint8_t first_half = *pc;
-
-    uint8_t second_half = *(pc+1);
-    
-    std::stringstream ss;
-    ss << std::hex <<  std::setw(2) << 
-    std::setfill('0') << static_cast<int>(first_half);
-    std::string first_half_str = ss.str();
-
-    std::stringstream ss_2;
-    ss_2 <<std::hex <<  std::setw(2) <<
-    std::setfill('0') << static_cast<int>(second_half);
-    
-    std::string second_half_str = ss_2.str();
-    
-    first_half_str += second_half_str;
-    pc += 2;
-    return first_half_str;
-}
 
 
 /***********functions for executing instructions
@@ -157,23 +139,25 @@ std::string fetch(){
     void set_index(std::array<int,3> bytes){
         //definitely works
         iRegsiter = bytes[0];
-        std::cout<<iRegsiter<<std::endl;
-
     };
 //drawing instruction   
     void draw(std::array<int,3> bytes){
-    //bytes[0] = x, bytes[1] = y, bytes [2] = n for the chip-8 draw instruction dxyn.        
-        uint8_t x_coord = vRegisters[bytes[0]];
-        uint8_t y_coord= vRegisters[bytes[1]];
-        x_coord = x_coord % 64; y_coord = y_coord % 32;
+    //bytes[0] = x, bytes[1] = y, bytes [2] = n for the chip-8 draw instruction dxyn.
+    std::cout<<"x"<<bytes[0]<<"y"<<bytes[1]<<"n"<<bytes[2]<<std::endl;        
+        unsigned int x_coord_original = vRegisters[bytes[0]];
+        unsigned int y_coord= vRegisters[bytes[1]];
+        x_coord_original = x_coord_original % 64; y_coord = y_coord % 32;
         vRegisters[0xf]  = 0;
         int n = bytes[2];
-        for (int row = 0; row < (n); ++row){
+
+        for (int row = 0; row < (n); row++){
+            uint8_t x_coord = x_coord_original;
             uint8_t line = ram[row+iRegsiter];
-            std::array<bool, 8> bits;
-            bits = extractBits(line);
-            for (bool i : bits){
+            std::cout<<std::bitset<8>(static_cast<int>(line))<<std::endl;
+            std::array<bool, 8> bits = extractBits(line);
+            for (auto i : bits){
                if ((i)){
+
                 screen[x_coord][y_coord] = !screen[x_coord][y_coord];
 
                 if(!screen[x_coord][y_coord]){
@@ -182,18 +166,42 @@ std::string fetch(){
                 }
                 x_coord++;
                 if (x_coord > 63){
+                    std::cout<<"x break"<<std::endl;
                     break;
                 }
             }
+
             y_coord++;
             if (y_coord > 31){
+                std::cout<<"y break"<<std::endl;
                 break;
             }
         }
     }
 
+//fetches instruction to be executed from memory  as a string and increments by 2 to be ready to read next instruction.
+std::string fetch(){
+    uint8_t first_half = *pc;
 
-/******* switch statements for executing instructions
+    uint8_t second_half = *(pc+1);
+    
+    std::stringstream ss;
+    ss << std::hex <<  std::setw(2) << 
+    std::setfill('0') << static_cast<int>(first_half);
+    std::string first_half_str = ss.str();
+
+    std::stringstream ss_2;
+    ss_2 <<std::hex <<  std::setw(2) <<
+    std::setfill('0') << static_cast<int>(second_half);
+    
+    std::string second_half_str = ss_2.str();
+    
+    first_half_str += second_half_str;
+    pc += 2;
+    return first_half_str;
+}
+
+/******* switch statement for executing instructions
 
 ************/
     void execute(std::string instruction){
@@ -214,7 +222,6 @@ std::string fetch(){
             case '7':
             add(extract_integers(instruction, 2)); break;
             case 'a':
-            std::cout<<instruction<<std::endl;
             set_index(extract_integers(instruction,1)); break;
             case 'd':
             draw(extract_integers(instruction, 3)); break;
